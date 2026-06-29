@@ -152,7 +152,7 @@ const adminLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        if (email === "chauhandivyansh246@gmail.com" && password === "976126") {
+        if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
             const token = generateToken(res, { email, role: 'admin' });
             
             const responseData = {
