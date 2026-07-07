@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const User = require('../models/user.model');
-const Course = require('../models/course.model');
 
 const createCourse = async (req, res) => {
     try {
