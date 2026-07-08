@@ -223,10 +223,34 @@ const pauseResumeCourses = async (req, res) => {
     }
 };
 
+const getPauseStatus = async (req, res) => {
+    try {
+        let settings = await Settings.findOne();
+
+        if (!settings) {
+            settings = await Settings.create({
+                isCoursePaused: false
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            isCoursePaused: settings.isCoursePaused
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     createCourse,
     getCourses,
     getVideoUrl,
     trackProgress,
-    pauseResumeCourses
+    pauseResumeCourses,
+    getPauseStatus
 };
