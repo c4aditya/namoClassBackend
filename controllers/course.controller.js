@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('../models/user.model');
 const Course = require('../models/course.model');
+const Settings = require("../models/Seeting.model");
 
 const createCourse = async (req, res) => {
     try {
@@ -46,6 +47,10 @@ const getCourses = async (req, res) => {
         const user = await User.findById(req.user.id);
         console.log("USER ENROLLMENT:", user.enrolledMonth);
 
+        // ✅ ADD THIS
+        const settings = await Settings.findOne();
+        const isCoursePaused = settings?.isCoursePaused || false;
+
         let courses;
         if (user.enrolledMonth === "1" || user.enrolledMonth === "1 month") {
             courses = await Course.find({ duration: "1" }).sort({ createdAt: 1 });
@@ -60,6 +65,16 @@ const getCourses = async (req, res) => {
             const unlockTime = accessTime + index * 12 * 60 * 60 * 1000;
             const isLocked = Date.now() < unlockTime;
             const courseObj = course.toObject();
+
+            // ✅ ADD THIS
+            if (isCoursePaused) {
+                courseObj.videoUrl = "";
+                courseObj.isLocked = true;
+                courseObj.isPaused = true;
+                courseObj.lockReason = "Classes are temporarily paused by admin.";
+                return courseObj;
+            }
+
             if (isLocked) {
                 courseObj.videoUrl = "";
                 courseObj.isLocked = true;
@@ -68,6 +83,7 @@ const getCourses = async (req, res) => {
                 courseObj.isLocked = false;
                 courseObj.unlockTime = unlockTime;
             }
+
             return courseObj;
         });
 
@@ -106,7 +122,10 @@ const getVideoUrl = async (req, res) => {
 
         const courseIndex = courses.findIndex(c => c._id.toString() === id);
         if (courseIndex === -1) {
-            return res.status(404).json({ success: false, message: "Course not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Course not found"
+            });
         }
 
         const accessTime = new Date(user.approvedAt || user.createdAt).getTime();
@@ -120,13 +139,28 @@ const getVideoUrl = async (req, res) => {
             });
         }
 
+        // ✅ NEW CODE START
+        const settings = await Settings.findOne();
+
+        if (settings?.isCoursePaused) {
+            return res.status(403).json({
+                success: false,
+                message: "Classes are temporarily paused by admin."
+            });
+        }
+        // ✅ NEW CODE END
+
         const course = courses[courseIndex];
+
         res.status(200).json({
             success: true,
             videoUrl: course.videoUrl
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };
 
@@ -159,9 +193,40 @@ const trackProgress = async (req, res) => {
     }
 };
 
+const pauseResumeCourses = async (req, res) => {
+    try {
+        const { isPaused } = req.body;
+
+        let settings = await Settings.findOne();
+
+        if (!settings) {
+            settings = await Settings.create({
+                isCoursePaused: isPaused
+            });
+        } else {
+            settings.isCoursePaused = isPaused;
+            await settings.save();
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: isPaused
+                ? "All classes paused successfully"
+                : "All classes resumed successfully"
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     createCourse,
     getCourses,
     getVideoUrl,
-    trackProgress
+    trackProgress,
+    pauseResumeCourses
 };

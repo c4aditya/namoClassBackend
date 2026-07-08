@@ -1,10 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { createCourse, getCourses, getVideoUrl, trackProgress } = require('../controllers/course.controller');
+const { createCourse, getCourses, getVideoUrl, trackProgress  , pauseResumeCourses} = require('../controllers/course.controller');
 const { authMiddleware, isAdmin, isUser } = require('../middleware/auth.middleware');
 
 // Admin only route
 router.post('/create-course', authMiddleware, isAdmin, createCourse);
+
+// pause the videos 
+router.patch(
+    "/pause-courses",
+    authMiddleware,
+    isAdmin,
+    pauseResumeCourses
+);
 
 // User only route (Enrollment based)
 router.get('/courses', authMiddleware, isUser, getCourses);
