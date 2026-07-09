@@ -342,19 +342,54 @@ const getAdminStats = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({}).sort({ createdAt: -1 }).select('-password');
+        const users = await User.find({})
+            .sort({ createdAt: -1 })
+            .select("-password");
+
         const totalUsers = await User.countDocuments({});
-        const totalEnrolledStudents = await User.countDocuments({ status: 'approved' });
+        const totalEnrolledStudents = await User.countDocuments({
+            status: "approved",
+        });
+
+        // Total courses
+        const totalCourses = await Course.countDocuments();
+
+        // Add progress info
+        const updatedUsers = users.map((user) => {
+
+            const progressCount = user.watchedVideos?.length || 0;
+            const completedClasses = progressCount;
+
+            let currentClass;
+
+            if (progressCount >= totalCourses) {
+                currentClass = "Completed";
+            } else {
+                currentClass = `Class ${progressCount + 1}`;
+            }
+
+            return {
+                ...user.toObject(),
+                progressCount,
+                completedClasses,
+                currentClass,
+                totalCourses,
+            };
+        });
 
         res.status(200).json({
             success: true,
-            users,
+            users: updatedUsers,
             totalUsers,
-            totalEnrolledStudents
+            totalEnrolledStudents,
         });
+
     } catch (error) {
         console.log("GET ALL USERS ERROR:", error.message);
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 
