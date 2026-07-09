@@ -175,7 +175,7 @@ const trackProgress = async (req, res) => {
         }
 
         // Ensure watchedVideos stores ObjectIds and avoid duplicates
-        const videoIdObj = mongoose.Types.ObjectId(id);
+        const videoIdObj = new mongoose.Types.ObjectId(id);
         const alreadyWatched = user.watchedVideos.some((v) => v.equals(videoIdObj));
         if (!alreadyWatched) {
             user.watchedVideos.push(videoIdObj);
