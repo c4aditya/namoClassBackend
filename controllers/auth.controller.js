@@ -90,6 +90,11 @@ const login = async (req, res) => {
             });
         }
 
+        if (!user.hasLoggedInAfterApproval) {
+            user.hasLoggedInAfterApproval = true;
+            await user.save();
+        }
+
         const token = generateToken(res, { userId: user._id, role: user.role });
 
         // Fetch courses based on user enrollment duration
@@ -128,7 +133,8 @@ const login = async (req, res) => {
                 role: user.role, 
                 status: user.status,
                 enrolledMonth: user.enrolledMonth,
-                approvedAt: user.approvedAt || user.createdAt
+                approvedAt: user.approvedAt || user.createdAt,
+                hasLoggedInAfterApproval: user.hasLoggedInAfterApproval
             },
             totalCourses: securedCourses.length,
             courses: securedCourses,
@@ -195,6 +201,27 @@ const getPendingUsers = async (req, res) => {
         console.log("ERROR: Failed to fetch pending users -", error.message);
         res.status(500).json({ 
             success: false,
+            message: error.message 
+        });
+    }
+};
+
+const getApprovedPendingLoginUsers = async (req, res) => {
+    try {
+        const users = await User.find({ status: 'approved', hasLoggedInAfterApproval: false })
+            .sort({ approvedAt: -1 })
+            .select('-password');
+        
+        console.log("SUCCESS: Fetched approved pending login users - Count:", users.length);
+        res.status(200).json({
+            success: true,
+            message: "Approved pending login users fetched successfully",
+            users
+        });
+    } catch (error) {
+        console.log("ERROR: Failed to fetch approved pending login users -", error.message);
+        res.status(500).json({ 
+            success: false, 
             message: error.message 
         });
     }
@@ -320,10 +347,10 @@ const getMe = async (req, res) => {
 
 const getAdminStats = async (req, res) => {
     try {
-        const totalUsers = await User.countDocuments();
+        const totalUsers = await User.countDocuments({ status: 'approved', hasLoggedInAfterApproval: { $ne: false } });
         const pendingUsers = await User.countDocuments({ status: 'pending' });
-        const oneMonthUsers = await User.countDocuments({ enrolledMonth: { $in: ["1", "1 month"] }, status: 'approved' });
-        const twoMonthUsers = await User.countDocuments({ enrolledMonth: { $in: ["2", "2 months", "2 month"] }, status: 'approved' });
+        const oneMonthUsers = await User.countDocuments({ enrolledMonth: { $in: ["1", "1 month"] }, status: 'approved', hasLoggedInAfterApproval: { $ne: false } });
+        const twoMonthUsers = await User.countDocuments({ enrolledMonth: { $in: ["2", "2 months", "2 month"] }, status: 'approved', hasLoggedInAfterApproval: { $ne: false } });
 
         res.status(200).json({
             success: true,
@@ -342,14 +369,13 @@ const getAdminStats = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({})
+        const query = { status: 'approved', hasLoggedInAfterApproval: { $ne: false } };
+        const users = await User.find(query)
             .sort({ createdAt: -1 })
             .select("-password");
 
-        const totalUsers = await User.countDocuments({});
-        const totalEnrolledStudents = await User.countDocuments({
-            status: "approved",
-        });
+        const totalUsers = await User.countDocuments(query);
+        const totalEnrolledStudents = await User.countDocuments(query);
 
         // Total courses
         const totalCourses = await Course.countDocuments();
@@ -461,6 +487,7 @@ module.exports = {
     getMe,
     getAdminStats,
     getPendingUsers,
+    getApprovedPendingLoginUsers,
     approveUser,
     logout,
     getAllUsers,

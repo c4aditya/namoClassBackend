@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema({
     watchedVideos: {
         type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
         default: []
+    },
+    hasLoggedInAfterApproval: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

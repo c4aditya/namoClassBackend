@@ -7,6 +7,7 @@ const {
     getMe,
     getAdminStats,
     getPendingUsers,
+    getApprovedPendingLoginUsers,
     approveUser,
     logout,
     getAllUsers,
@@ -28,6 +29,7 @@ router.get('/me', authMiddleware, getMe);
 router.get('/stats', authMiddleware, isAdmin, getAdminStats);
 router.post('/add-user', authMiddleware, isAdmin, addUser);
 router.get('/pending-users', authMiddleware, isAdmin, getPendingUsers);
+router.get('/approved-pending-login', authMiddleware, isAdmin, getApprovedPendingLoginUsers);
 router.put('/approve/:id', authMiddleware, isAdmin, approveUser);
 router.get('/users', authMiddleware, isAdmin, getAllUsers);
 router.put('/update-duration/:id', authMiddleware, isAdmin, updateUserDuration);
