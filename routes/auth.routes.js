@@ -12,7 +12,9 @@ const {
     logout,
     getAllUsers,
     updateUserDuration,
-    deleteUser
+    deleteUser,
+    forgotPassword,
+    resetPassword
 } = require('../controllers/auth.controller');
 const { addUser } = require('../controllers/allowedUser.controller');
 const { authMiddleware, isAdmin } = require('../middleware/auth.middleware');
@@ -21,6 +23,8 @@ const { authMiddleware, isAdmin } = require('../middleware/auth.middleware');
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/admin-login', adminLogin);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 // Protected routes (Shared)
 router.get('/me', authMiddleware, getMe);

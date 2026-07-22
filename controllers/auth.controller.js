@@ -480,6 +480,76 @@ const deleteUser = async (req, res) => {
     }
 };
 
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Email is required' 
+            });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            console.log("ERROR: Forgot password - email not found:", email);
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User with this email does not exist' 
+            });
+        }
+
+        console.log("SUCCESS: Forgot password email found -", email);
+        res.status(200).json({
+            success: true,
+            message: 'Email verified successfully'
+        });
+    } catch (error) {
+        console.log("ERROR: Forgot password failed -", error.message);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
+    }
+};
+
+const resetPassword = async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
+        if (!email || !newPassword) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Email and new password are required' 
+            });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            console.log("ERROR: Reset password - user not found:", email);
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        console.log("SUCCESS: Password reset successfully for -", email);
+        res.status(200).json({
+            success: true,
+            message: 'Password reset successfully'
+        });
+    } catch (error) {
+        console.log("ERROR: Reset password failed -", error.message);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
+    }
+};
+
 module.exports = {
     signup,
     login,
@@ -492,5 +562,8 @@ module.exports = {
     logout,
     getAllUsers,
     updateUserDuration,
-    deleteUser
+    deleteUser,
+    forgotPassword,
+    resetPassword
 };
+
